@@ -17,11 +17,12 @@ RUN apt-get -qq update && \
 COPY sounds/ ./sounds/
 RUN git clone https://github.com/rhasspy/wyoming-satellite git-repo && \
 	mkdir ./script/ && mv git-repo/script/setup git-repo/script/run ./script/ && \
-	mv git-repo/setup.py git-repo/requirements.txt git-repo/MANIFEST.in ./ && \
+	mv git-repo/pyproject.toml ./ && \
 	mv git-repo/wyoming_satellite ./wyoming_satellite/ && \
 	rm -rf git-repo
 
 RUN script/setup
+RUN pip install .
 
 EXPOSE 10700
 

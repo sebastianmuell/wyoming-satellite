@@ -31,7 +31,7 @@ docker run -d --restart=on-failure \
 ## Contributing
 Always welcome.
 
-## Acknowledgment
+## Authors and acknowledgment
 rhasspy - for maintaining and developing wyoming-openwakeword and wyoming-satellite 
 
 ## License

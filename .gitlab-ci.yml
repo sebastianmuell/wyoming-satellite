@@ -1,5 +1,4 @@
 variables:
-  CI_REGISTRY_IMAGE_BASE: "${CI_REGISTRY}/git/$CI_PROJECT_NAME"
   DOCKER_BUILDKIT: 1
   DOCKER_IPTABLES_LEGACY: 1
   DOCKER_HOST: "tcp://build:2375"
@@ -15,12 +14,25 @@ image:
 
 before_script:
   - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN
-  - docker pull $CI_REGISTRY_IMAGE:latest || true
 
 build_latest:
   stage: build
   only:
   - web
   script:
-    - docker build --pull --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest -t $CI_PROJECT_NAME:$CI_COMMIT_SHA -t $CI_PROJECT_NAME:latest -t $CI_PROJECT_NAME:${CI_COMMIT_SHORT_SHA} -t $CI_REGISTRY_IMAGE_BASE:${CI_PIPELINE_CREATED_AT//:/.} .
-    - docker push $CI_REGISTRY_IMAGE_BASE --all-tags
+    - |
+      docker pull $CI_REGISTRY_IMAGE:source || true \
+      docker pull "$(cat Dockerfile |egrep -I '^FROM' |cut -d' ' -f2)" \
+      docker tag "$(cat Dockerfile |egrep -I '^FROM' |cut -d' ' -f2)" $CI_REGISTRY_IMAGE:source \
+      docker push $CI_REGISTRY_IMAGE:source
+    - |
+      docker build --pull \
+      --build-arg BUILDKIT_INLINE_CACHE=1 --output=type=image,compression=zstd \
+      --cache-from $CI_REGISTRY_IMAGE:source --cache-from $CI_REGISTRY_IMAGE:latest \
+      -t $CI_PROJECT_NAME:$CI_COMMIT_SHA \
+      -t $CI_PROJECT_NAME:latest \
+      -t $CI_PROJECT_NAME:${CI_COMMIT_SHORT_SHA} \
+      -t $CI_REGISTRY_IMAGE:${CI_PIPELINE_CREATED_AT//:/.} .
+    - docker tag $CI_REGISTRY_IMAGE:${CI_PIPELINE_CREATED_AT//:/.} $CI_REGISTRY_IMAGE:latest
+    - docker push -a $CI_REGISTRY_IMAGE
+    - docker push $CI_REGISTRY_IMAGE:latest
