@@ -14,6 +14,7 @@ docker run -d --restart=on-failure \
   --security-opt seccomp=unconfined rhasspy/wyoming-openwakeword \
   --uri 'tcp://127.0.0.1:10400' \
   --preload-model 'alexa'
+  
 docker run -d --restart=on-failure \
   --name=wyoming-satellite \
   --network=host \
