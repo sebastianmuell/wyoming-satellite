@@ -6,18 +6,26 @@ services:
       - audio
     security_opt:
       - seccomp:unconfined
-    network_mode: host
-    restart: on-failure
-    command: "--uri 'tcp://127.0.0.1:10400' --preload-model 'alexa' --debug"
+    ports:
+      - 10400:10400/tcp
+    restart: always
+    command: "--uri 'tcp://127.0.0.1:10400' --preload-model 'alexa'"
   wyoming-satellite:
     image: CI_REGISTRY/git/wyoming-satellite:latest
     container_name: wyoming-satellite
     devices:
-      - /dev/snd
+      - /dev/snd/seq
+      - /dev/snd/timer
+      - /dev/snd/controlC0
+      - /dev/snd/controlC1
+      - /dev/snd/pcmC0D0c
+      - /dev/snd/pcmC1D0p
+      - /dev/snd/pcmC1D0c
     group_add:
       - audio
     security_opt:
       - seccomp:unconfined
-    network_mode: host
-    restart: on-failure
-    command: "--name 'audio-satellite' --mic-command 'arecord -D plughw:0,0 -r 16000 -c 1 -f S16_LE -t raw' --snd-command 'aplay -D plughw:0,0 -r 22050 -c 1 -f S16_LE -t raw' --uri 'tcp://0.0.0.0:10700' --wake-uri 'tcp://127.0.0.1:10400' --awake-wav '/app/sounds/awake.wav' --done-wav '/app/sounds/done.wav' --timer-finished-wav '/app/sounds/timer_finished.wav' --wake-word-name 'alexa' --debug"
+    ports:
+      - 10700:10700/tcp
+    restart: always
+    command: "--name 'audio-satellite' --mic-command 'arecord -D plughw:0,0 -r 16000 -c 1 -f S16_LE -t raw' --snd-command 'aplay -D plughw:1,0 -r 22050 -c 1 -f S16_LE -t raw' --uri 'tcp://0.0.0.0:10700' --wake-uri 'tcp://127.0.0.1:10400' --awake-wav '/app/sounds/awake.wav' --done-wav '/app/sounds/done.wav' --timer-finished-wav '/app/sounds/timer_finished.wav' --wake-word-name 'alexa'"

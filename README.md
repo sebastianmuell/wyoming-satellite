@@ -4,6 +4,7 @@ Wyoming Satellite for streaming audio and interacting with assist.
 
 ## Build
 Sounds are not included - place the wav files in ./sounds/ dir.
+  
 docker build -t wyoming-satellite .
 
 ## Usage

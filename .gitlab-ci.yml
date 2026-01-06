@@ -1,38 +1,20 @@
-variables:
-  DOCKER_BUILDKIT: 1
-  DOCKER_IPTABLES_LEGACY: 1
-  DOCKER_HOST: "tcp://build:2375"
-  DOCKER_TLS_CERTDIR: ""
-
-services:
-  - name: docker:dind-rootless
-    alias: build
-    command: ["--tls=false", "--storage-driver=fuse-overlayfs"]
-
 image:
-  name: docker:git
+  name: quay.io/podman/stable
 
 before_script:
-  - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN
+  - podman -r login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN
 
 build_latest:
   stage: build
   only:
   - web
   script:
+    - podman -r pull $CI_REGISTRY_IMAGE:latest ||true
+    - podman -r pull "$(cat Dockerfile |grep -EI '^FROM' |cut -d' ' -f2)"
     - |
-      docker pull $CI_REGISTRY_IMAGE:source || true \
-      docker pull "$(cat Dockerfile |egrep -I '^FROM' |cut -d' ' -f2)" \
-      docker tag "$(cat Dockerfile |egrep -I '^FROM' |cut -d' ' -f2)" $CI_REGISTRY_IMAGE:source \
-      docker push $CI_REGISTRY_IMAGE:source
-    - |
-      docker build --pull \
-      --build-arg BUILDKIT_INLINE_CACHE=1 --output=type=image,compression=zstd \
-      --cache-from $CI_REGISTRY_IMAGE:source --cache-from $CI_REGISTRY_IMAGE:latest \
-      -t $CI_PROJECT_NAME:$CI_COMMIT_SHA \
-      -t $CI_PROJECT_NAME:latest \
-      -t $CI_PROJECT_NAME:${CI_COMMIT_SHORT_SHA} \
+      podman -r build --build-arg PARALLEL=6 \
+      --network=host --cache-from $CI_REGISTRY_IMAGE \
       -t $CI_REGISTRY_IMAGE:${CI_PIPELINE_CREATED_AT//:/.} .
-    - docker tag $CI_REGISTRY_IMAGE:${CI_PIPELINE_CREATED_AT//:/.} $CI_REGISTRY_IMAGE:latest
-    - docker push -a $CI_REGISTRY_IMAGE
-    - docker push $CI_REGISTRY_IMAGE:latest
+    - podman -r tag $CI_REGISTRY_IMAGE:${CI_PIPELINE_CREATED_AT//:/.} $CI_REGISTRY_IMAGE:latest
+    - podman -r push $CI_REGISTRY_IMAGE:${CI_PIPELINE_CREATED_AT//:/.}
+    - podman -r push $CI_REGISTRY_IMAGE:latest
